@@ -546,7 +546,7 @@ static void *game_capture_create(obs_data_t *settings, obs_source_t *source)
 			HOTKEY_START, TEXT_HOTKEY_START,
 			HOTKEY_STOP,  TEXT_HOTKEY_STOP,
 			hotkey_start, hotkey_stop, gc, gc);
-	gc->camera = shared_memory_camera_create(L"obs_shared_memory_camera_game_capture");
+	gc->camera = shared_memory_camera_create(L"obs_shared_memory_camera");
 
 	game_capture_update(gc, settings);
 	return gc;

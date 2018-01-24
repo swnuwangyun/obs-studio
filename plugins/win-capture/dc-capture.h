@@ -4,6 +4,7 @@
 #include <windows.h>
 
 #include <obs-module.h>
+#include "shared-memory-camera.h"
 
 struct dc_capture {
 	gs_texture_t *texture;
@@ -21,6 +22,7 @@ struct dc_capture {
 	bool         cursor_captured;
 	bool         cursor_hidden;
 	CURSORINFO   ci;
+	struct camera_t *camera;
 
 	bool         valid;
 };

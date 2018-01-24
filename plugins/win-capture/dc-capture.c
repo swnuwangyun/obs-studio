@@ -63,6 +63,8 @@ void dc_capture_init(struct dc_capture *capture, int x, int y,
 				NULL, 0);
 		capture->old_bmp = SelectObject(capture->hdc, capture->bmp);
 	}
+
+	capture->camera = shared_memory_camera_create(L"obs_shared_memory_camera");
 }
 
 void dc_capture_free(struct dc_capture *capture)
@@ -78,6 +80,9 @@ void dc_capture_free(struct dc_capture *capture)
 	obs_leave_graphics();
 
 	memset(capture, 0, sizeof(struct dc_capture));
+
+	if (capture->camera)
+		shared_memory_camera_destroy(capture->camera);
 }
 
 static void draw_cursor(struct dc_capture *capture, HDC hdc, HWND window)
@@ -155,6 +160,21 @@ void dc_capture_capture(struct dc_capture *capture, HWND window)
 
 	BitBlt(hdc, 0, 0, capture->width, capture->height,
 			hdc_target, capture->x, capture->y, SRCCOPY);
+
+	if (true) {
+		struct frame_t *frame = shared_memory_camera_lock_write_buffer(capture->camera);
+		if (frame) {
+			static uint64_t counter = 0;
+			frame->counter = counter++;
+			frame->timestamp = GetTickCount64();
+			frame->cx = capture->width;
+			frame->cy = capture->height;
+			frame->pitch = capture->width * 4;
+			frame->spliter = 0xFFFFFFFF;
+			memcpy(frame->pixels, capture->bits, capture->height * capture->width * 4);
+		}
+		shared_memory_camera_unlock_write_buffer(capture->camera);
+	}
 
 	ReleaseDC(NULL, hdc_target);
 
