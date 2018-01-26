@@ -14,6 +14,7 @@
 #include "cursor-capture.h"
 #include "app-helpers.h"
 #include "nt-stuff.h"
+#include "shared-memory-camera.h"
 
 #define do_log(level, format, ...) \
 	blog(level, "[game-capture: '%s'] " format, \
@@ -150,6 +151,7 @@ struct game_capture {
 	wchar_t                       *app_sid;
 	int                           retrying;
 	float                         cursor_check_time;
+	struct camera_t               *camera;
 
 	union {
 		struct {
@@ -331,6 +333,7 @@ static void game_capture_destroy(void *data)
 	struct game_capture *gc = data;
 	stop_capture(gc);
 
+	shared_memory_camera_destroy(gc->camera);
 	if (gc->hotkey_pair)
 		obs_hotkey_pair_unregister(gc->hotkey_pair);
 
@@ -543,6 +546,7 @@ static void *game_capture_create(obs_data_t *settings, obs_source_t *source)
 			HOTKEY_START, TEXT_HOTKEY_START,
 			HOTKEY_STOP,  TEXT_HOTKEY_STOP,
 			hotkey_start, hotkey_stop, gc, gc);
+	gc->camera = shared_memory_camera_create(L"obs_shared_memory_camera");
 
 	game_capture_update(gc, settings);
 	return gc;
@@ -1461,8 +1465,21 @@ static void copy_shmem_tex(struct game_capture *gc)
 			copy_16bit_tex(gc, cur_texture, data, pitch);
 
 		} else if (pitch == gc->pitch) {
-			memcpy(data, gc->texture_buffers[cur_texture],
-					pitch * gc->cy);
+			memcpy(data, gc->texture_buffers[cur_texture], pitch * gc->cy);
+			if (true) {
+				struct frame_t *frame = shared_memory_camera_lock_write_buffer(gc->camera);
+				if (frame) {
+					static uint64_t counter = 0;
+					frame->counter = counter++;
+					frame->timestamp = GetTickCount64();
+					frame->cx = gc->cx;
+					frame->cy = gc->cy;
+					frame->pitch = pitch;
+					frame->spliter = 0xFFFFFFFF;
+					memcpy(frame->pixels, gc->texture_buffers[cur_texture], pitch * gc->cy);
+				}
+				shared_memory_camera_unlock_write_buffer(gc->camera);
+			}
 		} else {
 			uint8_t *input = gc->texture_buffers[cur_texture];
 			uint32_t best_pitch =
