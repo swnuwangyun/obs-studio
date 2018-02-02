@@ -546,7 +546,19 @@ static void *game_capture_create(obs_data_t *settings, obs_source_t *source)
 			HOTKEY_START, TEXT_HOTKEY_START,
 			HOTKEY_STOP,  TEXT_HOTKEY_STOP,
 			hotkey_start, hotkey_stop, gc, gc);
+
 	gc->camera = shared_memory_camera_create(L"obs_shared_memory_camera");
+	struct frame_t *frame = shared_memory_camera_lock_write_buffer(gc->camera);
+	if (frame) {
+		frame->counter = 0;
+		frame->timestamp = GetTickCount64();
+		frame->cx = 1920;
+		frame->cy = 1080;
+		frame->pitch = 1920*4;
+		frame->spliter = 0xFFFFFFFF;
+		memset(frame->pixels, 0x00, 1920 * 1080 * 4);
+	}
+	shared_memory_camera_unlock_write_buffer(gc->camera);
 
 	game_capture_update(gc, settings);
 	return gc;
@@ -1466,6 +1478,11 @@ static void copy_shmem_tex(struct game_capture *gc)
 
 		} else if (pitch == gc->pitch) {
 			memcpy(data, gc->texture_buffers[cur_texture], pitch * gc->cy);
+			if (false) {
+				FILE *fp = fopen("c:\\1.rgb", "wb+");
+				fwrite((const char*)gc->texture_buffers[cur_texture], 1, pitch * gc->cy, fp);
+				fclose(fp);
+			}
 			if (true) {
 				struct frame_t *frame = shared_memory_camera_lock_write_buffer(gc->camera);
 				if (frame) {
