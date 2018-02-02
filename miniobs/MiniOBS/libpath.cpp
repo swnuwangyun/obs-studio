@@ -38,7 +38,7 @@ wstring getTempPath()
 
 wstring combine(wstring path1, wstring path2)
 {
-	return path1 + L"\\" + path2;
+	return libtext::trimRight(path1, L"\\") + L"\\" + libtext::trimLeft(path2, L"\\");
 }
 
 wstring combine(wstring path)

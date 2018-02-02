@@ -4,6 +4,7 @@
 #include <map>
 #include "libtext.h"
 #include "libpath.h"
+#include "libfile.h"
 #include "obs-data.h"
 
 using namespace std;
@@ -14,6 +15,7 @@ MiniOBS::MiniOBS()
 
 MiniOBS::~MiniOBS()
 {
+	obs_shutdown();
 }
 
 MiniOBS* MiniOBS::instance()
@@ -24,13 +26,15 @@ MiniOBS* MiniOBS::instance()
 
 void MiniOBS::bind(HWND hwnd)
 {
-	RECT rc;
-	GetClientRect(hwnd, &rc);
-	map<wstring, wstring> dict = libtext::readKeyValuesFromFile(L"D:\\miniobs.ini");
-
 	// Startup obs
 	if (!obs_startup("en-US", nullptr, nullptr))
-		throw "Couldn't create OBS";
+		throw "Failed to startup obs";
+
+	// Load params
+	wstring path = libpath::combine(libpath::getTempPath(), L"miniobs.ini");
+	if (libfile::isFileExist(path) == false)
+		throw "miniobs.ini is missing";
+	map<wstring, wstring> dict = libtext::readKeyValuesFromFile(path);
 
 	// Reset video
 	struct obs_video_info ovi;
@@ -90,19 +94,19 @@ void MiniOBS::bind(HWND hwnd)
 		string window = libtext::wstring_To_UTF8(dict[L"window"]);
 		obs_data_set_string(settings, "window", window.c_str());
 
-		//enum window_priority {
-		//	WINDOW_PRIORITY_CLASS,
-		//	WINDOW_PRIORITY_TITLE,
-		//	WINDOW_PRIORITY_EXE,
-		//};
+		enum window_priority {
+			WINDOW_PRIORITY_CLASS,
+			WINDOW_PRIORITY_TITLE,
+			WINDOW_PRIORITY_EXE,
+		};
 		string prioritystr = libtext::wstring_To_UTF8(dict[L"priority"]);
-		int priority = 0;
+		window_priority priority = WINDOW_PRIORITY_CLASS;
 		if (prioritystr == "class")
-			priority = 0;
+			priority = WINDOW_PRIORITY_CLASS;
 		else if (prioritystr == "title")
-			priority = 1;
+			priority = WINDOW_PRIORITY_TITLE;
 		else if (prioritystr == "exe")
-			priority = 2;
+			priority = WINDOW_PRIORITY_EXE;
 		obs_data_set_int(settings, "priority", priority);
 
 		bool sli_compatibility = dict[L"sli_compatibility"] == L"1";
@@ -132,7 +136,7 @@ void MiniOBS::bind(HWND hwnd)
 	
 	obs_source_t *source = obs_source_create("game_capture", "source1", settings, NULL);
 #endif
-	obs_scene_t *scene = obs_scene_create("test scene");
+	obs_scene_t *scene = obs_scene_create("main scene");
 	obs_sceneitem_t *item = obs_scene_add(scene, source);
 
 	struct vec2 scale;
@@ -147,6 +151,8 @@ void MiniOBS::bind(HWND hwnd)
 	obs_set_output_source(0, obs_scene_get_source(scene));
 
 	// Create display and bind render callback
+	RECT rc;
+	GetClientRect(hwnd, &rc);
 	gs_init_data info = {};
 	info.cx = rc.right;
 	info.cy = rc.bottom;
