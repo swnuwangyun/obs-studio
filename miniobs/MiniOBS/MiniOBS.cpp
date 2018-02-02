@@ -60,7 +60,7 @@ void MiniOBS::bind(HWND hwnd)
 	obs_source_t *source = obs_source_create("color_source", "source1", settings, NULL);
 #endif
 
-#if 1
+#if 0
 	obs_data_t *settings = obs_get_source_defaults("monitor_capture");
 	obs_data_set_int(settings, "monitor", 0);
 	obs_data_set_bool(settings, "capture_cursor", true);
@@ -68,7 +68,7 @@ void MiniOBS::bind(HWND hwnd)
 	obs_source_t *source = obs_source_create("monitor_capture", "source1", NULL, NULL);
 #endif
 	
-#if 0
+#if 1
 	obs_data_t *settings = obs_get_source_defaults("game_capture");
 
 	//obs_data_set_string(settings, "capture_mode", "window");
@@ -89,6 +89,21 @@ void MiniOBS::bind(HWND hwnd)
 
 		string window = libtext::wstring_To_UTF8(dict[L"window"]);
 		obs_data_set_string(settings, "window", window.c_str());
+
+		//enum window_priority {
+		//	WINDOW_PRIORITY_CLASS,
+		//	WINDOW_PRIORITY_TITLE,
+		//	WINDOW_PRIORITY_EXE,
+		//};
+		string prioritystr = libtext::wstring_To_UTF8(dict[L"priority"]);
+		int priority = 0;
+		if (prioritystr == "class")
+			priority = 0;
+		else if (prioritystr == "title")
+			priority = 1;
+		else if (prioritystr == "exe")
+			priority = 2;
+		obs_data_set_int(settings, "priority", priority);
 
 		bool sli_compatibility = dict[L"sli_compatibility"] == L"1";
 		obs_data_set_bool(settings, "sli_compatibility", sli_compatibility);
