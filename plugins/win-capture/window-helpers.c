@@ -354,9 +354,19 @@ static int window_rating(HWND window,
 	get_window_title(&cur_title, window);
 	get_window_class(&cur_class, window);
 
+#if 0
 	bool class_matches = dstr_cmpi(&cur_class, class) == 0;
 	bool exe_matches = dstr_cmpi(&cur_exe, exe) == 0;
 	int title_val = abs(dstr_cmpi(&cur_title, title));
+#else
+	bool class_matches = dstr_cmpi(&cur_class, class) == 0;
+	bool exe_matches = dstr_cmpi(&cur_exe, exe) == 0;
+	int title_val = 0x7FFFFFFF;
+	if (strstr(cur_title.array, title))
+	{
+		title_val = 0;
+	}
+#endif
 
 	/* always match by name with UWP windows */
 	if (uwp_window) {
