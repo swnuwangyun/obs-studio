@@ -1478,6 +1478,7 @@ static void copy_shmem_tex(struct game_capture *gc)
 
 		} else if (pitch == gc->pitch) {
 			memcpy(data, gc->texture_buffers[cur_texture], pitch * gc->cy);
+
 			if (false) {
 				FILE *fp = fopen("c:\\1.rgb", "wb+");
 				fwrite((const char*)gc->texture_buffers[cur_texture], 1, pitch * gc->cy, fp);
@@ -1492,6 +1493,7 @@ static void copy_shmem_tex(struct game_capture *gc)
 					frame->cx = gc->cx;
 					frame->cy = gc->cy;
 					frame->pitch = pitch;
+					frame->color_format = gs_texture_get_color_format(gc->texture);
 					frame->spliter = 0xFFFFFFFF;
 					memcpy(frame->pixels, gc->texture_buffers[cur_texture], pitch * gc->cy);
 				}

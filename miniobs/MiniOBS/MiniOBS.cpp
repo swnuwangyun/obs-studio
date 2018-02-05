@@ -43,7 +43,7 @@ void MiniOBS::bind(HWND hwnd)
 	ovi.base_height = libtext::wstringToInt(dict[L"base_height"]);;
 	ovi.fps_num = libtext::wstringToInt(dict[L"fps_num"]);
 	ovi.fps_den = 1;
-	ovi.graphics_module = "libobs-opengl.dll";
+	ovi.graphics_module = "libobs-d3d11.dll";
 	ovi.output_format = VIDEO_FORMAT_NV12;
 	ovi.output_width = ovi.base_width;
 	ovi.output_height = ovi.base_height;

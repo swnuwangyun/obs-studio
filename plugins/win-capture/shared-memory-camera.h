@@ -11,6 +11,7 @@ struct frame_t{
 	unsigned int cx;
 	unsigned int cy;
 	unsigned int pitch;
+	unsigned int color_format;
 	unsigned int spliter;
 	unsigned char pixels[MAX_FRAME_SIZE];
 };
