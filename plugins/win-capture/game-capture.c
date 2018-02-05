@@ -1493,9 +1493,46 @@ static void copy_shmem_tex(struct game_capture *gc)
 					frame->cx = gc->cx;
 					frame->cy = gc->cy;
 					frame->pitch = pitch;
-					frame->color_format = gs_texture_get_color_format(gc->texture);
+					frame->color_format = 0;
 					frame->spliter = 0xFFFFFFFF;
-					memcpy(frame->pixels, gc->texture_buffers[cur_texture], pitch * gc->cy);
+
+					unsigned long color_format_origin = gs_texture_get_color_format(gc->texture);
+					switch (color_format_origin)
+					{
+					case GS_R10G10B10A2:
+					{
+						unsigned long *src = (unsigned long*)gc->texture_buffers[cur_texture];
+						unsigned long *dst = (unsigned long*)frame->pixels;
+						for (int i = 0; i < gc->cx*gc->cy; i++)
+						{
+							// 1111 1111 1100
+							//           0011 1111 1111
+							//                          1111 1111 1100
+							//                                    0011
+							unsigned long d = src[i];
+
+							unsigned long b = (d & 0x3FC00000) >> 22;
+							unsigned long g = (d & 0x000FF000) >> 12;
+							unsigned long r = (d & 0x000003FC) >> 2;
+							unsigned long a = d & 0x00000003;
+
+							unsigned long d2 = a << 24 | b << 16 | g << 8 | r;
+							dst[i] = d2;
+						}
+					}
+					break;
+					default:
+					{
+						memcpy(frame->pixels, gc->texture_buffers[cur_texture], pitch * gc->cy);
+					}
+					break;
+					}
+
+					if (false) {
+						FILE *fp = fopen("c:\\1.rgb", "wb+");
+						fwrite((const char*)frame->pixels, 1, pitch * gc->cy, fp);
+						fclose(fp);
+					}
 				}
 				shared_memory_camera_unlock_write_buffer(gc->camera);
 			}
