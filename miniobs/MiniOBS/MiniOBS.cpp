@@ -5,38 +5,68 @@
 #include "libtext.h"
 #include "libpath.h"
 #include "libfile.h"
+#include "liblog.h"
 #include "obs-data.h"
 
 using namespace std;
+using namespace liblog;
+
+#define TAG	L"miniobs"
+
+static void do_log(int log_level, const char *msg, va_list args, void *param)
+{
+	char str[4096];
+	vsnprintf(str, 4095, msg, args);
+	Log::i(L"libobs", libtext::string2wstring(str));
+}
+
+MiniOBS* MiniOBS::s_instance = NULL;
 
 MiniOBS::MiniOBS()
 {
+	Log::i(TAG, L"Begin create MiniOBS instance");
+	base_set_log_handler(do_log, NULL);
+	Log::i(TAG, L"End create MiniOBS instance");
 }
 
 MiniOBS::~MiniOBS()
 {
+	Log::i(TAG, L"Begin destroy MiniOBS instance");
 	obs_shutdown();
+	Log::i(TAG, L"End destroy MiniOBS instance");
 }
 
 MiniOBS* MiniOBS::instance()
 {
-	static MiniOBS instance;
-	return &instance;
+	if (s_instance == NULL)
+		s_instance = new MiniOBS();
+	return s_instance;
+}
+
+void MiniOBS::destroyInstance()
+{
+	if (s_instance)
+		delete s_instance;
 }
 
 void MiniOBS::bind(HWND hwnd)
 {
+	Log::i(TAG, L"Begin bind");
+
 	// Startup obs
+	Log::i(TAG, L"Call obs_startup");
 	if (!obs_startup("en-US", nullptr, nullptr))
 		throw "Failed to startup obs";
 
 	// Load params
+	Log::i(TAG, L"Load params");
 	wstring path = libpath::combine(libpath::getTempPath(), L"miniobs.ini");
 	if (libfile::isFileExist(path) == false)
 		throw "miniobs.ini is missing";
 	map<wstring, wstring> dict = libtext::readKeyValuesFromFile(path);
 
 	// Reset video
+	Log::i(TAG, L"Call obs_reset_video");
 	struct obs_video_info ovi;
 	ovi.adapter = 0;
 	ovi.base_width = libtext::wstringToInt(dict[L"base_width"]);
@@ -55,6 +85,7 @@ void MiniOBS::bind(HWND hwnd)
 		throw "Couldn't initialize video";
 
 	// Load all modules
+	Log::i(TAG, L"Call obs_load_all_modules");
 	obs_load_all_modules();
 
 	// Config scene
@@ -162,6 +193,8 @@ void MiniOBS::bind(HWND hwnd)
 
 	m_display = obs_display_create(&info);
 	obs_display_add_draw_callback(m_display, render, NULL);
+
+	Log::i(TAG, L"End bind");
 }
 
 void MiniOBS::render(void *data, uint32_t cx, uint32_t cy)

@@ -362,7 +362,7 @@ static int window_rating(HWND window,
 	bool class_matches = dstr_cmpi(&cur_class, class) == 0;
 	bool exe_matches = dstr_cmpi(&cur_exe, exe) == 0;
 	int title_val = 0x7FFFFFFF;
-	if (strstr(cur_title.array, title))
+	if (cur_title.array && strstr(cur_title.array, title))
 	{
 		title_val = 0;
 	}

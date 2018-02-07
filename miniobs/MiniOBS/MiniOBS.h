@@ -10,6 +10,7 @@ public:
 	~MiniOBS();
 
 	static MiniOBS* instance();
+	static void destroyInstance();
 
 public:
 	void bind(HWND hwnd);
@@ -19,5 +20,7 @@ private:
 
 private:
 	obs_display_t *m_display;
+
+	static MiniOBS *s_instance;
 };
 

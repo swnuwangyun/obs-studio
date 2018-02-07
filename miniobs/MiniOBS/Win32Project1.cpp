@@ -5,6 +5,12 @@
 #include "Win32Project1.h"
 #include <QApplication.h>
 #include "MiniOBS.h"
+#include "liblog.h"
+#include "libtext.h"
+#include "libpath.h"
+#include "libfile.h"
+
+using namespace liblog;
 
 #define MAX_LOADSTRING 100
 
@@ -12,7 +18,6 @@
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
-MiniOBS obs;									// The mini obs object
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -27,6 +32,27 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPTSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
+	wstring logPath = L"C:\\miniobs";
+	wstring logFileNamePrefix = L"miniobs";
+	wstring path = libpath::combine(libpath::getTempPath(), L"miniobs.ini");
+	if (libfile::isFileExist(path))
+	{
+		map<wstring, wstring> dict = libtext::readKeyValuesFromFile(path);
+		if (dict.find(L"log_path") != dict.end())
+		{
+			logPath = dict[L"log_path"];
+			logFileNamePrefix = dict[L"log_file_name_prefix"];
+		}
+	}
+	Log::cleanupLogFiles(logPath, logFileNamePrefix);
+	Log::i(L"main", L"");
+	Log::i(L"main", L"");
+	Log::i(L"main", L"===========================================================================");
+	Log::i(L"main", L"App entry");
+	Log::i(L"main", L"");
+
+	MiniOBS::instance();
+
 	QApplication app(__argc, __argv);
 
 	UNREFERENCED_PARAMETER(hPrevInstance);
@@ -58,6 +84,14 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 			DispatchMessage(&msg);
 		}
 	}
+
+	MiniOBS::destroyInstance();
+
+	Log::i(L"main", L"");
+	Log::i(L"main", L"App exit");
+	Log::i(L"main", L"===========================================================================");
+	Log::i(L"main", L"");
+	Log::i(L"main", L"");
 
 	return (int) msg.wParam;
 }
@@ -115,7 +149,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
-   obs.bind(hWnd);
+   MiniOBS::instance()->bind(hWnd);
 
    return TRUE;
 }
