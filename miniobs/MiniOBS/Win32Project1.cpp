@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "Win32Project1.h"
 #include <QApplication.h>
+#include <tlhelp32.h>
 #include "MiniOBS.h"
 #include "liblog.h"
 #include "libtext.h"
@@ -12,12 +13,14 @@
 
 using namespace liblog;
 
-#define MAX_LOADSTRING 100
+#define MAX_LOADSTRING		100
+#define TIMER_ID_5SECONDS	1000
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
+wstring hostProcessName;
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -42,6 +45,10 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		{
 			logPath = dict[L"log_path"];
 			logFileNamePrefix = dict[L"log_file_name_prefix"];
+		}
+		if (dict.find(L"host_process_name") != dict.end())
+		{
+			hostProcessName = dict[L"host_process_name"];
 		}
 	}
 	Log::cleanupLogFiles(logPath, logFileNamePrefix);
@@ -149,6 +156,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
+   SetTimer(hWnd, TIMER_ID_5SECONDS, 5000, NULL);
+
    MiniOBS::instance()->bind(hWnd);
 
    return TRUE;
@@ -166,12 +175,37 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	int wmId, wmEvent;
+	int wmId, wmEvent, timerId;
 	PAINTSTRUCT ps;
 	HDC hdc;
 
 	switch (message)
 	{
+	case WM_TIMER:
+		timerId = LOWORD(wParam);
+		if (timerId == TIMER_ID_5SECONDS)
+		{
+			if (hostProcessName.empty() == false)
+			{
+				bool exist = false;
+				HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+				PROCESSENTRY32 pe;
+				pe.dwSize = sizeof(PROCESSENTRY32);
+				if (!Process32First(snapshot, &pe))
+					break;
+				while (Process32Next(snapshot, &pe))
+				{
+					if (hostProcessName == pe.szExeFile)
+						exist = true;
+				}
+				if (exist == false)
+				{
+					Log::i(L"main", libtext::format(L"Host process %s is not found, exit app!", hostProcessName));
+					DestroyWindow(hWnd);
+				}
+			}
+		}
+		break;
 	case WM_COMMAND:
 		wmId    = LOWORD(wParam);
 		wmEvent = HIWORD(wParam);
@@ -194,6 +228,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		EndPaint(hWnd, &ps);
 		break;
 	case WM_DESTROY:
+		KillTimer(hWnd, TIMER_ID_5SECONDS);
 		PostQuitMessage(0);
 		break;
 	default:
