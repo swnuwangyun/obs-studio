@@ -414,8 +414,9 @@ static void AddComboItem(QComboBox *combo, obs_property_t *prop,
 	const char *name = obs_property_list_item_name(prop, idx);
 	QVariant var;
 
-	std::wstring str = QString::fromUtf8(name).toStdWString();
+	std::string str = QString::fromUtf8(name).toStdString();
 	str.c_str();
+	blog(LOG_INFO, "AddComboItem with name=%s", str.c_str());
 
 	if (format == OBS_COMBO_FORMAT_INT) {
 		long long val = obs_property_list_item_int(prop, idx);
@@ -429,8 +430,9 @@ static void AddComboItem(QComboBox *combo, obs_property_t *prop,
 		var = QByteArray(obs_property_list_item_string(prop, idx));
 
 		const char *v = obs_property_list_item_string(prop, idx);
-		std::wstring str2 = QString::fromUtf8(v).toStdWString();
+		std::string str2 = QString::fromUtf8(v).toStdString();
 		str2.c_str();
+		blog(LOG_INFO, "AddComboItem with value=%s", str2.c_str());
 	}
 
 	combo->addItem(QT_UTF8(name), var);
