@@ -122,10 +122,13 @@ set(obs-outputs_HEADERS
 	rtmp-helpers.h
 	rtmp-stream.h
 	net-if.h
+	shared-memory-camera.h
 	flv-mux.h)
 set(obs-outputs_SOURCES
 	obs-outputs.c
 	null-output.c
+	shared-memory-camera.c
+	shared-memory-output.c
 	rtmp-stream.c
 	rtmp-windows.c
 	flv-output.c

@@ -1,0 +1,2 @@
+18-02-05   1.0.0.1		Fix TslGame capture
+18-02-03   1.0.0.0		Initial version
